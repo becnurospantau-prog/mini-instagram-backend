@@ -30,6 +30,26 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     access_token = auth.create_access_token(username=db_user.username)
     return {"access_token": access_token, "token_type": "bearer"}
 
+
+
+
+
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"message": "Күтпеген қате шықты!", "details": str(exc)},
+    )
+
+
+
+@app.get("/posts", response_model=List[schemas.PostOut])
+def read_posts(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    return crud.get_posts(db, skip=skip, limit=limit)
+
 # =====================================================
 # USERS CRUD
 # =====================================================
@@ -72,29 +92,31 @@ def delete_user(user_id: int,
 # POSTS CRUD
 # =====================================================
 
-@app.post("/posts", response_model=schemas.PostOut)
-def create_post(post: schemas.PostCreate,
-                db: Session = Depends(get_db),
-                current_user: User = Depends(auth.get_current_user)):  # User object, string емес
-    return crud.create_post(
-        db,
-        current_user.id,   # int
-        post.caption       # string
-    )  
+# =====================================================
+# POSTS CRUD
+# =====================================================
 
+# 1. ОСЫ ЖЕРГЕ ҚОЙ (Ескі read_posts немесе get_posts функциясының орнына)
 @app.get("/posts", response_model=List[schemas.PostOut])
-def get_posts(db: Session = Depends(get_db),
-              current_user: str = Depends(auth.get_current_user)):
-    return crud.get_posts(db)
+def read_posts(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    """Бұл функция бүкіл посттарды бетке бөліп (pagination) шығарады"""
+    return crud.get_posts(db, skip=skip, limit=limit)
 
+# 2. Пост жасау (бұл қала береді)
+@app.post("/posts", response_model=schemas.PostOut)
+def create_post(post: schemas.PostCreate, 
+                db: Session = Depends(get_db), 
+                current_user: models.User = Depends(auth.get_current_user)):
+    return crud.create_post(db, current_user.id, post.caption)
+
+# 3. Жеке бір постты алу (бұл да қала береді)
 @app.get("/posts/{post_id}", response_model=schemas.PostOut)
-def get_post(post_id: int,
-             db: Session = Depends(get_db),
-             current_user: str = Depends(auth.get_current_user)):
+def get_post(post_id: int, db: Session = Depends(get_db)):
     post = crud.get_post(db, post_id)
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     return post
+
 
 @app.put("/posts/{post_id}", response_model=schemas.PostOut)
 def update_post(post_id: int,
