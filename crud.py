@@ -8,14 +8,14 @@ from passlib.hash import bcrypt
 # USERS
 # USERS бөліміне қосу
 def update_user(db: Session, user_id: int, user_update):
-    db_user = db.query(models.User).filter(models.User.id == user_id).first()
-    if db_user:
-        update_data = user_update.dict(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_user, key, value)
-        db.commit()
-        db.refresh(db_user)
-    return db_user
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if db_user:
+        update_data = user_update.dict(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_user, key, value)
+        db.commit()
+        db.refresh(db_user)
+    return db_user
 
 def delete_user(db: Session, user_id: int):
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
