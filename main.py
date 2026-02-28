@@ -360,3 +360,10 @@ def delete_token(token_id: int, db: Session = Depends(get_db)):
     db.delete(token)
     db.commit()
     return {"detail": "Token deleted"}
+
+
+
+
+@app.get("/")
+def root():
+    return {"message": "API is running 🚀"}
